@@ -10,4 +10,4 @@ class PacketSource(object):
 	def create_packet(self, bitrate_kbps):
 		self.latest_id += 1
 		self.latest_timestamp_ms += (8 * self.packet_size_bytes) / bitrate_kbps
-		return Packet(self.latest_id, self.latest_timestamp_ms)
+		return Packet(self.latest_id, self.latest_timestamp_ms, self.packet_size_bytes)

@@ -1,5 +1,6 @@
 class Packet(object):
 
-	def __init__(self, _id, _timestamp_ms):
+	def __init__(self, _id, _send_time_ms):
 		self.id = _id
-		self.timestamp_ms = _timestamp_ms
+		self.send_time_ms = _send_time_ms
+		self.arrival_time_ms = None

@@ -18,7 +18,7 @@ class TestPacketSource(unittest.TestCase):
         for i in range(1, 11):
             packet = packet_source.create_packet(bitrate_kbps)
             self.assertEqual(i, packet.id)
-            self.assertNear(i*8*packet_size_bytes/bitrate_kbps, packet.timestamp_ms, 0.01)
+            self.assertNear(i*8*packet_size_bytes/bitrate_kbps, packet.send_time_ms, 0.01)
 
     def test_create_packet_variable_bitrate(self):
         packet_size_bytes = 1200.0
@@ -30,7 +30,7 @@ class TestPacketSource(unittest.TestCase):
             packet = packet_source.create_packet(bitrate_kbps)
             time_ms += 8*packet_size_bytes/bitrate_kbps
             self.assertEqual(i, packet.id)
-            self.assertNear(time_ms, packet.timestamp_ms, 0.01)
+            self.assertNear(time_ms, packet.send_time_ms, 0.01)
 
 
 if __name__ == '__main__':

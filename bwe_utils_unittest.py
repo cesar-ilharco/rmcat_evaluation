@@ -2,10 +2,14 @@ import unittest
 import random
 
 from packet import Packet
-from bwe_utils import loss_ratio, global_loss_ratio
+from packet_source import PacketSource
+from bwe_utils import loss_ratio, global_loss_ratio, receiving_rate_kbps
 
 
 class TestBweUtils(unittest.TestCase):
+
+	def assertNear(self, x, y, precision):
+		self.assertTrue(abs(x-y) < precision)
 
 	def test_loss_ratio_no_packets(self):
 		self.assertEqual(loss_ratio(None, 0.0), 0.0)
@@ -66,6 +70,36 @@ class TestBweUtils(unittest.TestCase):
 		p2 = Packet(1000, None, None)
 		self.assertEqual(global_loss_ratio([p1, p2]), 1.0 - float(2)/1000)
 
+	def test_receiving_rate_kbps_no_packets(self):
+		self.assertEqual(receiving_rate_kbps(None, 0.0), 0.0)
+		self.assertEqual(receiving_rate_kbps(None, 100.0), 0.0)
+		self.assertEqual(receiving_rate_kbps([], 0.0), 0.0)
+		self.assertEqual(receiving_rate_kbps([], 100.0), 0.0)
+
+	def test_receiving_rate_kbps_single_packet(self):
+		payload_sizes_bytes = [0.0, 500.0, 1200.0] # Empty or non-empty packet.
+		for payload_size_bytes in payload_sizes_bytes:
+			# id and send_time don't matter here.
+			packet = Packet(None, None, payload_size_bytes)
+			for i in range(10):
+				packet.arrival_time_ms = i
+				time_window_ms = random.uniform(100.0, 1000.0)
+				self.assertEqual(receiving_rate_kbps([packet], time_window_ms),
+					             8.0 * packet.payload_size_bytes / time_window_ms)
+
+	def test_receiving_rate_regular_packets(self):
+		for i in range(10):
+			bitrate_kbps = random.uniform(150.0, 2500.0)
+			packet_size_bytes = random.uniform(1.0, 8000.0)
+			delay_ms = random.uniform(10.0, 300.0)
+			packet_source = PacketSource(packet_size_bytes)
+			packets = []
+			for j in range(1000):
+				packet = packet_source.create_packet(bitrate_kbps)
+				packet.arrival_time_ms = packet.send_time_ms + delay_ms
+				packets.append(packet)
+			time_window_ms = random.uniform(0.0, 1.0) * packets[-1].arrival_time_ms
+			self.assertNear(receiving_rate_kbps(packets, time_window_ms), bitrate_kbps, 0.001)
 
 if __name__ == '__main__':
     unittest.main()

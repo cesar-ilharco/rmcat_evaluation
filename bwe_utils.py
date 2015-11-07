@@ -25,3 +25,25 @@ def global_loss_ratio(packets):
 	newest_id = max([p.id for p in packets])
 	oldest_id = min([p.id for p in packets])
 	return 1.0 - float(packets_received)/(newest_id - oldest_id + 1)
+
+def receiving_rate_kbps(packets, time_window_ms):
+	if packets is None or len(packets) == 0:
+		return 0.0
+	newest_packet_ms = packets[-1].arrival_time_ms
+	time_limit_ms = newest_packet_ms - time_window_ms
+	bytes_counter = 0.0
+	packets_counter = 0
+
+	# Count until the first packet out of the time limit.
+	for i in range(len(packets)-1, -1, -1):
+		oldest_packet_ms = packets[i].arrival_time_ms
+		bytes_counter += packets[i].payload_size_bytes
+		packets_counter += 1
+		if oldest_packet_ms < time_window_ms:
+			break
+
+	if packets_counter == 1:
+		return (8.0 * bytes_counter) / time_window_ms
+
+	return ((packets_counter - 1) * 8.0 * bytes_counter) \
+	       /(packets_counter * (newest_packet_ms - oldest_packet_ms))

@@ -17,19 +17,19 @@ class LinkSimulator(object):
 
 	def send_packet(self, packet):
 		packet.arrival_time_ms = packet.send_time_ms
-		self.add_path_delay(packet)
-		self.add_sending_time(packet)
+		self.__add_path_delay(packet)
+		self.__add_sending_time(packet)
 		# Packet might have been lost.
 		if packet.arrival_time_ms is not None:
-			self.add_jitter(packet)
+			self.__add_jitter(packet)
 
 
 	# Equivalent to bwe_simulation_framework DelayFilter.
-	def add_path_delay(self, packet):
+	def __add_path_delay(self, packet):
 		packet.arrival_time_ms += self.ONE_WAY_PATH_DELAY_MS
 
 	# Equivalent to bwe_simulation_framework ChokeFilter.
-	def add_sending_time(self, packet):
+	def __add_sending_time(self, packet):
 		travel_time_ms = (8 * packet.payload_size_bytes) / self.capacity_kbps
 		updated_arrival_time_ms = max(self.__last_choke_time_ms, packet.arrival_time_ms) + travel_time_ms
 		if updated_arrival_time_ms - packet.arrival_time_ms < self.BOTTLENECK_QUEUE_SIZE_MS:
@@ -39,7 +39,7 @@ class LinkSimulator(object):
 			packet.arrival_time_ms = None
 
 	# Equivalent to bwe_simulation_framework JitterFilter.
-	def add_jitter(self, packet):
+	def __add_jitter(self, packet):
 		# Random from positive truncated gaussian distribution.
 		jitter_ms = min(abs(random.gauss(0.0, self.JITTER_SIGMA_MS)), self.MAX_JITTER_MS)
 		updated_arrival_time_ms = max(packet.arrival_time_ms + jitter_ms, self.__last_jitter_time_ms)

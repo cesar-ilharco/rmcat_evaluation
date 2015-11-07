@@ -38,7 +38,7 @@ class TestLinkSimulator(unittest.TestCase):
         capacity_kbps = 1500.0
         payload_size_bytes = 1200.0
         travel_time_ms = (8 * payload_size_bytes) / capacity_kbps
-        # Send packets sparsely to maitain an empty queue.
+        # Send packets sparsely to maintain an empty queue.
         packet_gap_ms = 5 * travel_time_ms
         link_simulator = LinkSimulator(capacity_kbps)
         jitter_sample_ms = []
@@ -55,6 +55,33 @@ class TestLinkSimulator(unittest.TestCase):
         plot.xlabel("ms", fontsize=14)
         plot.ylabel("Probability density", fontsize=14)
         plot.show()
+
+    # The jitter model preserves the packet ordering.
+    def test_jitter_collision(self):
+        capacity_kbps = 2000.0
+        payload_size_bytes = 1200.0
+        travel_time_ms = (8 * payload_size_bytes) / capacity_kbps
+        # Packets are sent close one to another, but they should not be reordered.
+        packet_gap_ms = travel_time_ms
+        link_simulator = LinkSimulator(capacity_kbps)
+        last_arrival_time_ms = 0.0
+        jitter_sample_ms = []
+        for i in range(500000):
+            send_time_ms = i * packet_gap_ms
+            packet = Packet(i, send_time_ms, payload_size_bytes)
+            link_simulator.send_packet(packet)
+            self.assertTrue(packet.arrival_time_ms >= last_arrival_time_ms)
+            last_arrival_time_ms = packet.arrival_time_ms
+            jitter_ms = packet.arrival_time_ms - send_time_ms - travel_time_ms - link_simulator.ONE_WAY_PATH_DELAY_MS
+            self.assertBetween(jitter_ms, 0.0, link_simulator.MAX_JITTER_MS, 0.001)
+            jitter_sample_ms.append(jitter_ms)
+
+        plot.hist(jitter_sample_ms, bins=50, normed=1)
+        plot.title("Jitter sample 2 - collision")
+        plot.xlabel("ms", fontsize=14)
+        plot.ylabel("Probability density", fontsize=14)
+        plot.show()
+
 
 
 if __name__ == '__main__':

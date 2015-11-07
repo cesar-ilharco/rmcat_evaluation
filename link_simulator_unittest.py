@@ -8,9 +8,10 @@ from link_simulator import LinkSimulator
 
 class TestLinkSimulator(unittest.TestCase):
 
+    PLOT = True
+
     def assertBetween(self, x, m, M, precision):
         self.assertTrue(x >= m - precision and x <= M + precision)
-
 
     def test_send_single_packet(self):
         packet_sizes = [0.0, 1200.0]  # Empty or non-empty packet
@@ -33,7 +34,6 @@ class TestLinkSimulator(unittest.TestCase):
             link_simulator.send_packet(packet)
             self.assertIs(packet.arrival_time_ms, None)
 
-
     def test_jitter(self):
         capacity_kbps = 1500.0
         payload_size_bytes = 1200.0
@@ -50,11 +50,12 @@ class TestLinkSimulator(unittest.TestCase):
             self.assertBetween(jitter_ms, 0.0, link_simulator.MAX_JITTER_MS, 0.001)
             jitter_sample_ms.append(jitter_ms)
 
-        plot.hist(jitter_sample_ms, bins=50, normed=1)
-        plot.title("Jitter sample")
-        plot.xlabel("ms", fontsize=14)
-        plot.ylabel("Probability density", fontsize=14)
-        plot.show()
+        if TestLinkSimulator.PLOT:
+            plot.hist(jitter_sample_ms, bins=50, normed=1)
+            plot.title("Jitter sample")
+            plot.xlabel("ms", fontsize=14)
+            plot.ylabel("Probability density", fontsize=14)
+            plot.show()
 
     # The jitter model preserves the packet ordering.
     def test_jitter_collision(self):
@@ -76,11 +77,12 @@ class TestLinkSimulator(unittest.TestCase):
             self.assertBetween(jitter_ms, 0.0, link_simulator.MAX_JITTER_MS, 0.001)
             jitter_sample_ms.append(jitter_ms)
 
-        plot.hist(jitter_sample_ms, bins=50, normed=1)
-        plot.title("Jitter sample 2 - collision")
-        plot.xlabel("ms", fontsize=14)
-        plot.ylabel("Probability density", fontsize=14)
-        plot.show()
+        if TestLinkSimulator.PLOT:
+            plot.hist(jitter_sample_ms, bins=50, normed=1)
+            plot.title("Jitter sample 2 - collision")
+            plot.xlabel("ms", fontsize=14)
+            plot.ylabel("Probability density", fontsize=14)
+            plot.show()
 
 
 

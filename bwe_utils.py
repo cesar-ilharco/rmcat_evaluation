@@ -35,11 +35,11 @@ def receiving_rate_kbps(packets, time_window_ms):
 	packets_counter = 0
 
 	# Count until the first packet out of the time limit.
-	for i in range(len(packets)-1, -1, -1):
-		oldest_packet_ms = packets[i].arrival_time_ms
-		bytes_counter += packets[i].payload_size_bytes
+	for i in range(1, len(packets)+1):
+		oldest_packet_ms = packets[-i].arrival_time_ms
+		bytes_counter += packets[-i].payload_size_bytes
 		packets_counter += 1
-		if oldest_packet_ms < time_window_ms:
+		if oldest_packet_ms < time_limit_ms:
 			break
 
 	if packets_counter == 1:

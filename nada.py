@@ -111,7 +111,7 @@ class NadaReceiver(object):
 		delta_ms = now_ms - self.latest_feedback_ms
 		self.latest_feedback_ms = now_ms
 		derivative = 0.0
-		if self.congestion_signals_ms:
+		if len(self.congestion_signals_ms) > 1:
 			derivative = (self.congestion_signals_ms[-1] - self.congestion_signals_ms[-2]) / delta_ms
 
 		return NadaFeedback(self.est_queuing_delays_ms[-1], self.loss_ratios[-1], self.congestion_signals_ms[-1], derivative,

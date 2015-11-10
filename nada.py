@@ -7,7 +7,7 @@ from bwe_utils import loss_ratio, receiving_rate_kbps
 class NadaFeedback(object):
 
 	def __init__(self, est_queuing_delay_ms_, loss_ratio_, congestion_signal_ms_, derivative_,
-				baseline_delay_ms_, delta_ms_, interval_ms_, receiving_rate_kbps_):
+				baseline_delay_ms_, delta_ms_, interval_ms_, receiving_rate_kbps_, exp_smoothed_delay_ms_):
 		self.est_queuing_delay_ms = est_queuing_delay_ms_
 		self.loss_ratio = loss_ratio_
 		self.congestion_signal_ms = congestion_signal_ms_
@@ -16,17 +16,23 @@ class NadaFeedback(object):
 		self.delta_ms = delta_ms_
 		self.interval_ms = interval_ms_
 		self.receiving_rate_kbps = receiving_rate_kbps_
+		self.exp_smoothed_delay_ms = exp_smoothed_delay_ms_
 
 class NadaSender(object):
 
-	PAYLOAD_SIZE_BYTES = 1200.0;
-	MIN_BITRATE_KBPS = 50.0;
-	MAX_BITRATE_KBPS = 2500.0;
+	PAYLOAD_SIZE_BYTES = 1200.0
+	MIN_BITRATE_KBPS = 50.0
+	MAX_BITRATE_KBPS = 2500.0
 	QUEUING_DELAY_UPPER_BOUND_MS = 10.0
+	MAX_CONGESTION_SIGNAL_MS = 40.0  # Used only in modified mode.
 
-	def __init__(self):
+	# NADA modified operation mode is an attempt to improve the original one.
+	def __init__(self, original_mode_):
 		self.bitrate_kbps = 300.0
 		self.packet_source = PacketSource(NadaSender.PAYLOAD_SIZE_BYTES)
+		self.original_mode = original_mode_
+		if not self.original_mode:
+			self.min_est_travel_time_ms = float("inf")
 
 	def create_packet(self):
 		return self.packet_source.create_packet(self.bitrate_kbps)
@@ -35,6 +41,8 @@ class NadaSender(object):
 	def receive_feedback(self, feedback):
 		if self.__should_ramp_up(feedback):
 			self.__accelerated_ramp_up(feedback)
+		elif not self.original_mode and self.__should_ramp_down(feedback):
+			self.__accelerated_ramp_down(feedback)
 		else:
 			self.__gradual_rate_update(feedback)
 		# Bitrate should be kept between MIN and MAX.
@@ -43,14 +51,31 @@ class NadaSender(object):
 
 	def __should_ramp_up(self, feedback):
 		derivative_upper_bound = 10.0 / feedback.interval_ms
-		return feedback.loss_ratio == 0 and feedback.est_queuing_delay_ms < NadaSender.QUEUING_DELAY_UPPER_BOUND_MS \
-			   and feedback.derivative < derivative_upper_bound
+		if self.original_mode:
+			return feedback.loss_ratio == 0 and feedback.est_queuing_delay_ms < NadaSender.QUEUING_DELAY_UPPER_BOUND_MS \
+					and feedback.derivative < derivative_upper_bound
+		else: # Stricter accelerated ramp up.
+			extra_delay_ms = self.__estimate_extra_delay_ms()
+			return feedback.loss_ratio == 0 and (feedback.exp_smoothed_delay_ms < NadaSender.QUEUING_DELAY_UPPER_BOUND_MS / 3.0 \
+					or feedback.exp_smoothed_delay_ms - extra_delay_ms < NadaSender.QUEUING_DELAY_UPPER_BOUND_MS / 3.0) \
+					and feedback.derivative < derivative_upper_bound and feedback.receiving_rate_kbps > NadaSender.MIN_BITRATE_KBPS
+
+	def __should_ramp_down(self, feedback):
+		return max(feedback.congestion_signal_ms , feedback.exp_smoothed_delay_ms) > NadaSender.MAX_CONGESTION_SIGNAL_MS
 
 	def __accelerated_ramp_up(self, feedback):
 		MAX_RAMP_UP_QUEUING_DELAY_MS = 50.0   # Referred as T_th.
 		GAMMA_0 = 0.5
 		gamma = min(GAMMA_0, MAX_RAMP_UP_QUEUING_DELAY_MS/(feedback.baseline_delay_ms + feedback.interval_ms))
+		if not self.original_mode:
+			gamma = gamma / 2
 		self.bitrate_kbps = (1.0 + gamma) * feedback.receiving_rate_kbps
+
+	def __accelerated_ramp_down(self, feedback):
+		GAMMA_0 = 0.9;
+		gamma = 2.0 * NadaSender.MAX_CONGESTION_SIGNAL_MS / (feedback.congestion_signal_ms + feedback.exp_smoothed_delay_ms);
+		gamma = min(gamma**0.5, GAMMA_0);
+		self.bitrate_kbps = gamma * feedback.receiving_rate_kbps;
 
 	def __gradual_rate_update(self, feedback):
 		TAU_O_MS = 500.0
@@ -58,10 +83,25 @@ class NadaSender(object):
 		KAPPA = 1.0
 		REFERENCE_DELAY_MS = 10.0   # Referred as x_ref.
 		PRIORITY_WEIGHT = 1.0       # Referred as w.
-		x_hat = feedback.congestion_signal_ms + ETA * TAU_O_MS * feedback.derivative
-		theta = PRIORITY_WEIGHT * (NadaSender.MAX_BITRATE_KBPS - NadaSender.MIN_BITRATE_KBPS) * REFERENCE_DELAY_MS
-		increase_kbps = KAPPA * feedback.delta_ms * (theta - x_hat * (self.bitrate_kbps - NadaSender.MIN_BITRATE_KBPS)) / (TAU_O_MS ** 2)
-		self.bitrate_kbps += increase_kbps
+		if self.original_mode:
+			x_hat = feedback.congestion_signal_ms + ETA * TAU_O_MS * feedback.derivative
+			theta = PRIORITY_WEIGHT * (NadaSender.MAX_BITRATE_KBPS - NadaSender.MIN_BITRATE_KBPS) * REFERENCE_DELAY_MS
+			increase_kbps = KAPPA * feedback.delta_ms * (theta - x_hat * (self.bitrate_kbps - NadaSender.MIN_BITRATE_KBPS)) / (TAU_O_MS ** 2)
+			self.bitrate_kbps += increase_kbps
+		else: # Smoother rate update.
+			extra_delay_ms = self.__estimate_extra_delay_ms()
+			new_congestion_signal_ms = max(0.0, feedback.congestion_signal_ms - extra_delay_ms)
+			x_hat = new_congestion_signal_ms + ETA * TAU_O_MS * feedback.derivative
+			theta = PRIORITY_WEIGHT * (NadaSender.MAX_BITRATE_KBPS - NadaSender.MIN_BITRATE_KBPS) * REFERENCE_DELAY_MS
+			increase_kbps = KAPPA * feedback.delta_ms * (theta - x_hat * (self.bitrate_kbps - NadaSender.MIN_BITRATE_KBPS)) / (TAU_O_MS ** 2)
+			bitrate_reference = 3.0*(self.bitrate_kbps- NadaSender.MIN_BITRATE_KBPS)/(NadaSender.MAX_BITRATE_KBPS - NadaSender.MIN_BITRATE_KBPS)
+			smoothing_factor = min(bitrate_reference ** 2.0, 1.0)
+			self.bitrate_kbps += increase_kbps * smoothing_factor
+
+	def __estimate_extra_delay_ms(self):
+		est_travel_time_ms = 8.0 * NadaSender.PAYLOAD_SIZE_BYTES / self.bitrate_kbps
+		self.min_est_travel_time_ms = min(self.min_est_travel_time_ms, est_travel_time_ms)
+		return est_travel_time_ms - self.min_est_travel_time_ms
 
 class NadaReceiver(object):
 
@@ -70,7 +110,7 @@ class NadaReceiver(object):
 	RECEIVING_RATE_TIME_WINDOW_MS = 500.0
 	LOSS_PENALTY_MS = 1000.0
 
-	def __init__(self):
+	def __init__(self, use_median_filter_):
 		self.latest_feedback_ms = 0.0
 		self.baseline_delay_ms = float("inf")
 		self.packets = []
@@ -83,6 +123,7 @@ class NadaReceiver(object):
 		self.congestion_signals_ms = []
 		self.loss_ratios = []
 		self.receiving_rates_kbps = []
+		self.use_median_filter = use_median_filter_
 
 	def receive_packet(self, packet):
 		self.time_ms.append(packet.arrival_time_ms)
@@ -115,12 +156,18 @@ class NadaReceiver(object):
 			derivative = (self.congestion_signals_ms[-1] - self.congestion_signals_ms[-2]) / delta_ms
 
 		return NadaFeedback(self.est_queuing_delays_ms[-1], self.loss_ratios[-1], self.congestion_signals_ms[-1], derivative,
-							self.baseline_delay_ms, delta_ms, NadaReceiver.FEEDBACK_INTERVAL_MS, self.receiving_rates_kbps[-1])
+							self.baseline_delay_ms, delta_ms, NadaReceiver.FEEDBACK_INTERVAL_MS, self.receiving_rates_kbps[-1],
+							self.exp_smoothed_delays_ms[-1])
 
 	def __median_filter(self):
-		K_MEDIAN = 5   # Filter latest 5 elements
-		elements = self.delay_signals_ms[-K_MEDIAN:]
-		return median(elements)
+		if self.use_median_filter:
+			K_MEDIAN = 5   # Filter latest 5 elements
+			elements = self.delay_signals_ms[-K_MEDIAN:]
+			return median(elements)
+		else: # Use min element
+			K_MIN = 5
+			elements = self.delay_signals_ms[-K_MIN:]
+			return min(elements)
 
 	def __exp_smoothing_filter(self):
 		ALPHA = 0.9

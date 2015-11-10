@@ -11,7 +11,7 @@ def __plot(receiver, times_ms, capacities_kbps):
 	plt.ylabel('bitrate (kbps)', fontsize=16)
 
 	plt.subplot(312)
-	plt.plot(map(ms_to_s, receiver.time_ms), receiver.delay_signals_ms, label='delay signals')
+	plt.plot(map(ms_to_s, receiver.time_ms), receiver.delay_signals_ms, label='delay signal')
 	plt.ylabel('delay (ms)', fontsize=16)
 
 	plt.subplot(313)

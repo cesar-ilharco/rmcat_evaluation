@@ -48,5 +48,5 @@ def rmcat_evaluation_1(sender, receiver):
 	__test_single_flow(sender, receiver, times_ms, capacities_kbps)
 
 
-def test_constant_capacity(sender, receiver):
-	__test_single_flow(sender, receiver, [30 * 1000.0], [1500.0])
+def test_constant_capacity(sender, receiver, duration_s, capacity_kbps):
+	__test_single_flow(sender, receiver, [duration_s * 1000.0], [capacity_kbps])

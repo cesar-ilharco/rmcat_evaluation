@@ -4,15 +4,22 @@ from packet import Packet
 
 class LinkSimulator(object):
 
-	def __init__(self, capacity_kbps_):
+	def __init__(self, capacity_kbps_, jitter_intensity):
 		self.ONE_WAY_PATH_DELAY_MS = 50.0
 		self.BOTTLENECK_QUEUE_SIZE_MS = 300.0
-		self.MAX_JITTER_MS = 15.0
-		self.JITTER_SIGMA_MS = 5.0
 		self.capacity_kbps = capacity_kbps_
 		# Last timestamp independent for Choke and Jitter filters, as on the Chrome repository C++ simulation framework.
 		self.__last_choke_time_ms = 0.0
 		self.__last_jitter_time_ms = 0.0
+		if jitter_intensity == 0:   # No jitter
+			self.MAX_JITTER_MS      = 0.0
+			self.JITTER_SIGMA_MS    = 0.0
+		elif jitter_intensity == 1: # Gentle jitter
+			self.MAX_JITTER_MS      = 15.0
+			self.JITTER_SIGMA_MS    = 5.0
+		else:                       # Default RMCAT jitter
+			self.MAX_JITTER_MS      = 30.0
+			self.JITTER_SIGMA_MS    = 15.0
 		
 
 	def send_packet(self, packet):

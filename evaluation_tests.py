@@ -21,9 +21,9 @@ def __plot(receiver, times_ms, capacities_kbps):
 	plt.show()
 
 
-def __test_single_flow(sender, receiver, times_ms, capacities_kbps):
+def __test_single_flow(sender, receiver, times_ms, capacities_kbps, jitter):
 
-	link_simulator = LinkSimulator(None)
+	link_simulator = LinkSimulator(None, jitter)
 	now_ms = 0.0
 
 	for i in range(len(capacities_kbps)):
@@ -42,11 +42,11 @@ def __test_single_flow(sender, receiver, times_ms, capacities_kbps):
 	__plot(receiver, times_ms, capacities_kbps)
 
 
-def rmcat_evaluation_1(sender, receiver):
+def rmcat_evaluation_1(sender, receiver, jitter):
 	capacities_kbps = [1000.0, 2500.0, 600.0, 1000.0]
 	times_ms = map(lambda x:1000.0*x, [40, 60, 80, 99])
-	__test_single_flow(sender, receiver, times_ms, capacities_kbps)
+	__test_single_flow(sender, receiver, times_ms, capacities_kbps, jitter)
 
 
-def test_constant_capacity(sender, receiver, duration_s, capacity_kbps):
-	__test_single_flow(sender, receiver, [duration_s * 1000.0], [capacity_kbps])
+def test_constant_capacity(sender, receiver, duration_s, capacity_kbps, jitter):
+	__test_single_flow(sender, receiver, [duration_s * 1000.0], [capacity_kbps], jitter)

@@ -1,5 +1,10 @@
 from packet import Packet
 
+"""
+Packets are not initialized directly in the Simulation Framework.
+They will be created by the PacketSource class.
+"""
+
 class PacketSource(object):
 
     def __init__(self, packet_size_bytes):

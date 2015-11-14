@@ -3,6 +3,12 @@ import argparse
 from nada import NadaSender, NadaReceiver
 from evaluation_tests import rmcat_evaluation_1, test_constant_capacity
 
+"""
+main method runs an evalution test for NADA congestion control algorithm.
+The following parameters can be optionally specified on the command line:
+--jitter, --modified_sender, --modified_filter
+e.g. python main.py -j 2 -mf -ms runs modified NADA sender with min filter and high jitter.
+"""
 
 def parse_args():
     parser = argparse.ArgumentParser()

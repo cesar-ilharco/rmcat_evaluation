@@ -5,6 +5,9 @@ from packet import Packet
 from packet_source import PacketSource
 from bwe_utils import loss_ratio, global_loss_ratio, receiving_rate_kbps
 
+"""
+Unittests for bwe_utils.
+"""
 
 class TestBweUtils(unittest.TestCase):
 

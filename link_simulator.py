@@ -1,5 +1,13 @@
 import random
 
+"""
+Simulates a network link.
+The arrival time is computed based on the send_time and three factors:
+-- The one-way-path-delay, the minimum trip time from one end to another.
+-- The sending time, corresponding to the payload_size divided by the link capacity.
+-- Jitter, simulated as a truncated right sided Gaussian distribution.
+"""
+
 class LinkSimulator(object):
 
     def __init__(self, capacity_kbps_, jitter_intensity):

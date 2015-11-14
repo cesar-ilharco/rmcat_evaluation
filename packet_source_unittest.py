@@ -4,6 +4,9 @@ import random
 from packet import Packet
 from packet_source import PacketSource
 
+"""
+Unittests for the PacketSource class.
+"""
 
 class TestPacketSource(unittest.TestCase):
 

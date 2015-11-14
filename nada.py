@@ -3,6 +3,15 @@ from numpy import median
 from packet_source import PacketSource
 from bwe_utils import loss_ratio, receiving_rate_kbps
 
+"""
+Network-Assisted Dynamic Adaptation (NADA) is a congestion control algorithm
+for real-time media applications. It is a work in progress, which Internet
+draft can be found here: https://tools.ietf.org/html/draft-zhu-rmcat-nada-06
+NadaSender and NadaReceiver were implemented with original parameters.
+An optional modified operation mode is available as an attempt to improve
+the congestion control algorithm's performance.
+"""
+
 class NadaFeedback(object):
 
     def __init__(self, est_queuing_delay_ms_, loss_ratio_, congestion_signal_ms_, derivative_,

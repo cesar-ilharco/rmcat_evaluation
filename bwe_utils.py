@@ -1,5 +1,13 @@
-# Receives as an argument an array of packets, sorted by arrival_time, increasingly.
+"""
+Those methods can potentially be used by other congestion control algorithms.
+Hence they are put separately here in this file.
+"""
+
 def loss_ratio(packets, time_window_ms):
+    """
+    Receives as an argument an array of packets, sorted by arrival_time, increasingly.
+    Computes the loss ratio in the previous time_window_ms.
+    """
     if packets is None or len(packets) == 0:
         return 0.0
     num_packets = len(packets)
@@ -25,6 +33,10 @@ def global_loss_ratio(packets):
     return 1.0 - float(packets_received)/(newest_id - oldest_id + 1)
 
 def receiving_rate_kbps(packets, time_window_ms):
+    """
+    Receives as an argument an array of packets, sorted by arrival_time, increasingly.
+    Computes the receiving rate, in kbps, in the previous time_window_ms.
+    """
     if packets is None or len(packets) == 0:
         return 0.0
     newest_packet_ms = packets[-1].arrival_time_ms

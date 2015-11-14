@@ -5,6 +5,9 @@ import matplotlib.pyplot as plot
 from packet import Packet
 from link_simulator import LinkSimulator
 
+"""
+Unittests for the LinkSimulator class. Plot can be useful for visualizing jitter, a random distribution.
+"""
 
 class TestLinkSimulator(unittest.TestCase):
 

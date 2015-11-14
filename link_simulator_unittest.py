@@ -22,7 +22,8 @@ class TestLinkSimulator(unittest.TestCase):
                 packet = Packet(1, 0.0, payload_size_bytes)
                 link_simulator.send_packet(packet)
                 travel_time_ms = link_simulator.ONE_WAY_PATH_DELAY_MS + (8 * payload_size_bytes)/capacity_kbps
-                self.assertBetween(packet.arrival_time_ms, travel_time_ms, travel_time_ms + link_simulator.MAX_JITTER_MS, 0.001)
+                self.assertBetween(packet.arrival_time_ms, travel_time_ms,
+                                   travel_time_ms + link_simulator.MAX_JITTER_MS, 0.001)
 
     def test_bottleneck_queue_limit(self):
         for i in range(10):
@@ -47,7 +48,8 @@ class TestLinkSimulator(unittest.TestCase):
                 send_time_ms = i * packet_gap_ms
                 packet = Packet(i, send_time_ms, payload_size_bytes)
                 link_simulator.send_packet(packet)
-                jitter_ms = packet.arrival_time_ms - send_time_ms - travel_time_ms - link_simulator.ONE_WAY_PATH_DELAY_MS
+                jitter_ms = packet.arrival_time_ms - send_time_ms \
+                          - travel_time_ms - link_simulator.ONE_WAY_PATH_DELAY_MS
                 self.assertBetween(jitter_ms, 0.0, link_simulator.MAX_JITTER_MS, 0.001)
                 jitter_sample_ms.append(jitter_ms)
 
@@ -75,7 +77,8 @@ class TestLinkSimulator(unittest.TestCase):
                 link_simulator.send_packet(packet)
                 self.assertTrue(packet.arrival_time_ms >= last_arrival_time_ms)
                 last_arrival_time_ms = packet.arrival_time_ms
-                jitter_ms = packet.arrival_time_ms - send_time_ms - travel_time_ms - link_simulator.ONE_WAY_PATH_DELAY_MS
+                jitter_ms = packet.arrival_time_ms - send_time_ms \
+                          - travel_time_ms - link_simulator.ONE_WAY_PATH_DELAY_MS
                 self.assertBetween(jitter_ms, 0.0, link_simulator.MAX_JITTER_MS, 0.001)
                 jitter_sample_ms.append(jitter_ms)
 

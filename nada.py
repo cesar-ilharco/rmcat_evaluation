@@ -176,7 +176,7 @@ class NadaReceiver(object):
             elements = self.delay_signals_ms[-K_MEDIAN:]
             return median(elements)
         else: # Use min element
-            K_MIN = 5
+            K_MIN = 10
             elements = self.delay_signals_ms[-K_MIN:]
             return min(elements)
 

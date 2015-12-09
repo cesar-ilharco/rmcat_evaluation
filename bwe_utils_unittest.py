@@ -3,7 +3,7 @@ import random
 
 from packet import Packet
 from packet_source import PacketSource
-from bwe_utils import loss_ratio, global_loss_ratio, receiving_rate_kbps
+from bwe_utils import loss_ratio, global_loss_ratio, receiving_rate_kbps, average_bitrate_kbps, average_delay_ms
 
 """
 Unittests for bwe_utils.
@@ -103,6 +103,56 @@ class TestBweUtils(unittest.TestCase):
                 packets.append(packet)
             time_window_ms = random.uniform(0.0, 1.0) * packets[-1].arrival_time_ms
             self.assertNear(receiving_rate_kbps(packets, time_window_ms), bitrate_kbps, 0.001)
+
+    def test_average_bitrate_no_packets(self):
+        self.assertEqual(average_bitrate_kbps(None), 0.0)
+        self.assertEqual(average_bitrate_kbps([]), 0.0)
+
+    def test_average_bitrate_single_packet(self):
+        for i in range(10):
+            packet_size_bytes = random.uniform(1.0, 8000.0)
+            delay_ms = random.uniform(10.0, 300.0)
+            packet = Packet(1, 0.0, packet_size_bytes)
+            packet.arrival_time_ms = delay_ms
+            self.assertEqual(average_bitrate_kbps([packet]), 8.0 * packet_size_bytes / delay_ms)
+
+    def test_average_bitrate_two_packets(self):
+        for i in range(10):
+            packet_size_bytes = random.uniform(1.0, 8000.0)
+            delay_ms = random.uniform(10.0, 300.0)
+            gap_ms = random.uniform(10.0, 50.0)
+            packet1 = Packet(1, 0.0, packet_size_bytes)
+            packet2 = Packet(2, gap_ms, packet_size_bytes)
+            packet1.arrival_time_ms = delay_ms
+            packet2.arrival_time_ms = gap_ms + delay_ms
+            self.assertNear(average_bitrate_kbps([packet1, packet2]), 8.0 * packet_size_bytes / gap_ms, 0.001)
+
+    def test_average_bitrate_multiple_packets(self):
+        for i in range(10):
+            packet_size_bytes = random.uniform(1.0, 8000.0)
+            delay_ms = random.uniform(10.0, 300.0)
+            gap_ms = random.uniform(10.0, 50.0)
+            packets = []
+            for j in range(1000):
+                packets.append(Packet(j+1, j*gap_ms, packet_size_bytes))
+                packets[j].arrival_time_ms = packets[j].send_time_ms + delay_ms
+            self.assertNear(average_bitrate_kbps(packets), 8.0 * packet_size_bytes / gap_ms, 0.001)
+
+    def test_average_delay_no_packets(self):
+        self.assertEqual(average_delay_ms(None), 0.0)
+        self.assertEqual(average_delay_ms([]), 0.0)
+
+    def test_average_delay_multiple_packets(self):
+        self.assertEqual(average_delay_ms(None), 0.0)
+        self.assertEqual(average_delay_ms([]), 0.0)
+        for i in range(10):
+            delay_ms = random.uniform(10.0, 300.0)
+            gap_ms = random.uniform(10.0, 50.0)
+            packets = []
+            for j in range(1000):
+                packets.append(Packet(j+1, j*gap_ms, 1200.0))
+                packets[j].arrival_time_ms = packets[j].send_time_ms + delay_ms
+            self.assertNear(average_delay_ms(packets), delay_ms, 0.001)
 
 if __name__ == '__main__':
     unittest.main()

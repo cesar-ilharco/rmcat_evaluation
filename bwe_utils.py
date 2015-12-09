@@ -57,3 +57,31 @@ def receiving_rate_kbps(packets, time_window_ms):
 
     return ((packets_counter - 1) * 8.0 * bytes_counter) \
            /(packets_counter * (newest_packet_ms - oldest_packet_ms))
+
+def average_bitrate_kbps(packets):
+    """
+    Computes the average bitrate throughout the whole simulation.
+    """
+    if packets is None or len(packets) == 0:
+        return 0.0
+
+    if len(packets) == 1:
+        return 8.0 * packets[0].payload_size_bytes / packets[0].arrival_time_ms
+
+    total_received_bits = 8.0 * sum([packet.payload_size_bytes for packet in packets])
+    time_span_ms = packets[-1].arrival_time_ms - packets[0].arrival_time_ms
+
+    # If n packets were received, we are counting only n-1 time gaps between them.
+    correction_factor = float(len(packets) - 1)/len(packets)
+
+    return (total_received_bits / time_span_ms) * correction_factor
+
+def average_delay_ms(packets):
+    """
+    Computes the average delay throughout the whole simulation.
+    """
+    if packets is None or len(packets) == 0:
+        return 0.0
+
+    sum_delays_ms = sum([packet.arrival_time_ms - packet.send_time_ms for packet in packets])
+    return sum_delays_ms / len(packets)

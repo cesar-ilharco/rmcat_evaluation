@@ -17,11 +17,11 @@ def __plot(receiver, times_ms, capacities_kbps):
     plt.ylabel('bitrate (kbps)', fontsize=16)
 
     plt.subplot(312)
-    plt.plot([time_ms/1000.0 for time_ms in receiver.time_ms], receiver.delay_signals_ms, label='delay signal')
+    plt.plot([time_ms/1000.0 for time_ms in receiver.time_ms], receiver.delay_signals_ms, 0, 350, label='delay signal')
     plt.ylabel('delay (ms)', fontsize=16)
 
     plt.subplot(313)
-    plt.plot([time_ms/1000.0 for time_ms in receiver.time_ms], [100.0*ratio for ratio in receiver.loss_ratios],
+    plt.plot([time_ms/1000.0 for time_ms in receiver.time_ms], [100.0*ratio for ratio in receiver.loss_ratios], 0, 100,
              label='loss ratio')
     plt.ylabel('packet loss %', fontsize=16)
     plt.xlabel('time (s)', fontsize=16)

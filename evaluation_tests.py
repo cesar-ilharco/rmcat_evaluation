@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 
 from link_simulator import LinkSimulator
+from bwe_utils import global_loss_ratio, average_bitrate_kbps, average_delay_ms
 
 """
 Evaluation tests for congestion control algorithms.
@@ -27,6 +28,15 @@ def __plot(receiver, times_ms, capacities_kbps):
     plt.xlabel('time (s)', fontsize=16)
     plt.show()
 
+def __print(receiver):
+    """
+    Output results:
+    Global packet loss and Average Metrics: bitrate and delay.
+    """
+    print("Average bitrate (kbps)  =", average_bitrate_kbps(receiver.packets))
+    print("Average delay (ms)      =", average_delay_ms(receiver.packets))
+    print("Global packet loss      =", global_loss_ratio(receiver.packets))
+
 
 def __test_single_flow(sender, receiver, times_ms, capacities_kbps, jitter):
     """
@@ -48,6 +58,7 @@ def __test_single_flow(sender, receiver, times_ms, capacities_kbps, jitter):
                 sender.receive_feedback(feedback)
             now_ms = packet.send_time_ms
 
+    __print(receiver)
     __plot(receiver, times_ms, capacities_kbps)
 
 
